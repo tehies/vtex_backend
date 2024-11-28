@@ -34,34 +34,71 @@ const fetchFromVtex = async (url, headers = {}) => {
 };
 
 // Route to fetch all products
-app.get('/products', async (req, res) => {
+// app.get('/products', async (req, res) => {
+//     try {
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
+//         // Ensure you are fetching the correct products endpoint
+//         const products = await fetchFromVtex(`${VTEX_API_URL}/api/catalog_system/pub/products/search`, headers); // Append /products if necessary
+//         res.json(products);
+//     } catch (error) {
+//         res.status(500).send('Error fetching products from VTEX API');
+//     }
+// });
+
+app.get('/sku/:skuId', async (req, res) => {
     try {
+        const skuId = req.params.skuId; // Get SKU ID from the URL
+        if (!skuId) {
+            return res.status(400).send('SKU ID is required');
+        }
+
         const headers = {
             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
-        // Ensure you are fetching the correct products endpoint
-        const products = await fetchFromVtex(`${VTEX_API_URL}/api/catalog_system/pub/products/search`, headers); // Append /products if necessary
-        res.json(products);
+
+        const url = `${VTEX_API_URL}/api/catalog_system/pvt/sku/stockkeepingunitbyid/${skuId}`;
+        const skuDetails = await fetchFromVtex(url, headers);
+        res.json(skuDetails);
     } catch (error) {
-        res.status(500).send('Error fetching products from VTEX API');
+        console.error('Error fetching SKU details:', error);
+        res.status(500).send('Error fetching SKU details from VTEX API');
     }
 });
+
+
+
+
+
 
 // Route to fetch products in a specific collection
 app.get('/collectionProduct', async (req, res) => {
     try {
+        const collectionId = req.query.collectionId; // Get collectionId from query parameters
+        if (!collectionId) {
+            return res.status(400).send('Collection ID is required');
+        }
+
         const headers = {
             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
-        // You already have a full URL here, no need to modify it
-        const products = await fetchFromVtex(`${VTEX_API_URL}/api/catalog/pvt/collection/138/products`, headers);
+
+        const url = `${VTEX_API_URL}/api/catalog/pvt/collection/${collectionId}/products`;
+        const products = await fetchFromVtex(url, headers);
         res.json(products);
     } catch (error) {
+        console.error('Error fetching products:', error);
         res.status(500).send('Error fetching products from VTEX API');
     }
 });
+
+
+
+
 
 // Root route for API status
 app.get('/', (req, res) => {
