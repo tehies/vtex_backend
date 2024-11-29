@@ -68,6 +68,27 @@ app.get('/sku/:skuId', async (req, res) => {
         res.status(500).send('Error fetching SKU details from VTEX API');
     }
 });
+app.get('/pricing/:skuId', async (req, res) => {
+    try {
+        const skuId = req.params.skuId; // Get SKU ID from the URL
+        if (!skuId) {
+            return res.status(400).send('SKU ID is required');
+        }
+
+        const headers = {
+            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+        };
+
+        // VTEX Pricing API URL
+        const url = `${VTEX_API_URL}/iamtechiepartneruae/pricing/prices/${skuId}`;
+        const pricingDetails = await fetchFromVtex(url, headers);
+        res.json(pricingDetails);
+    } catch (error) {
+        console.error('Error fetching pricing details:', error);
+        res.status(500).send('Error fetching pricing details from VTEX API');
+    }
+});
 
 
 
@@ -93,6 +114,33 @@ app.get('/collectionProduct', async (req, res) => {
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).send('Error fetching products from VTEX API');
+    }
+});
+
+// Route to fetch products based on search query
+app.get('/searchProducts', async (req, res) => {
+    try {
+        const searchQuery = req.query.q; // Get search query from query parameters
+        if (!searchQuery) {
+            return res.status(400).send('Search query is required');
+        }
+
+        const headers = {
+            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+        };
+
+        const url = `https://iamtechiepartneruae.vtexcommercestable.com.br/api/catalog_system/pub/products/search/${encodeURIComponent(searchQuery)}`;
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            throw new Error(`VTEX API error: ${response.statusText}`);
+        }
+
+        const products = await response.json();
+        res.json(products);
+    } catch (error) {
+        console.error('Error fetching search results:', error);
+        res.status(500).send('Error fetching search results from VTEX API');
     }
 });
 
