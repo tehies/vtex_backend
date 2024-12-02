@@ -90,11 +90,6 @@ app.get('/pricing/:skuId', async (req, res) => {
     }
 });
 
-
-
-
-
-
 // Route to fetch products in a specific collection
 app.get('/collectionProduct', async (req, res) => {
     try {
@@ -118,6 +113,37 @@ app.get('/collectionProduct', async (req, res) => {
 });
 
 // Route to fetch products based on search query
+// app.get('/searchProducts', async (req, res) => {
+//     try {
+//         const searchQuery = req.query.q; // Get search query from query parameters
+//         if (!searchQuery) {
+//             return res.status(400).send('Search query is required');
+//         }
+
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
+
+//         const url = `https://iamtechiepartneruae.vtexcommercestable.com.br/api/catalog_system/pub/products/search/${encodeURIComponent(searchQuery)}`;
+//         const response = await fetch(url, { headers });
+//         if (!response.ok) {
+//             throw new Error(`VTEX API error: ${response.statusText}`);
+//         }
+
+//         const products = await response.json();
+//         res.json(products);
+//     } catch (error) {
+//         console.error('Error fetching search results:', error);
+//         res.status(500).send('Error fetching search results from VTEX API');
+//     }
+// });
+
+
+
+
+
+//use search product api and Get product's SKUs by product ID 
 app.get('/searchProducts', async (req, res) => {
     try {
         const searchQuery = req.query.q; // Get search query from query parameters
@@ -130,20 +156,35 @@ app.get('/searchProducts', async (req, res) => {
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
 
-        const url = `https://iamtechiepartneruae.vtexcommercestable.com.br/api/catalog_system/pub/products/search/${encodeURIComponent(searchQuery)}`;
+        const url = `${VTEX_API_URL}/api/catalog_system/pub/products/search/${encodeURIComponent(searchQuery)}`;
         const response = await fetch(url, { headers });
         if (!response.ok) {
             throw new Error(`VTEX API error: ${response.statusText}`);
         }
 
         const products = await response.json();
-        res.json(products);
+
+        // Fetch variations (SKUs) for each product
+        const productsWithSkus = await Promise.all(
+            products.map(async (product) => {
+                const variationsUrl = `${VTEX_API_URL}/api/catalog_system/pub/products/variations/${product.productId}`;
+                const variationsResponse = await fetch(variationsUrl, { headers });
+                if (variationsResponse.ok) {
+                    const skuDetails = await variationsResponse.json();
+                    product.skus = skuDetails;
+                } else {
+                    product.skus = [];
+                }
+                return product;
+            })
+        );
+
+        res.json(productsWithSkus);
     } catch (error) {
         console.error('Error fetching search results:', error);
         res.status(500).send('Error fetching search results from VTEX API');
     }
 });
-
 
 
 
