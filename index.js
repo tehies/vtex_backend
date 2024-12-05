@@ -33,6 +33,26 @@ const fetchFromVtex = async (url, headers = {}) => {
     }
 };
 
+app.get('/product/:productId/variants', async (req, res) => {
+    try {
+        const productId = req.params.productId; // Get product ID from the URL
+        if (!productId) {
+            return res.status(400).send('Product ID is required');
+        }
+
+        const headers = {
+            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+        };
+
+        const url = `${VTEX_API_URL}/api/catalog_system/pub/products/variations/${productId}`;
+        const productVariants = await fetchFromVtex(url, headers);
+        res.json(productVariants);
+    } catch (error) {
+        console.error('Error fetching product variants:', error);
+        res.status(500).send('Error fetching product variants from VTEX API');
+    }
+});
 // Route to fetch all products
 // app.get('/products', async (req, res) => {
 //     try {
@@ -326,6 +346,3 @@ app.listen(port, () => {
 // app.listen(port, () => {
 //     console.log(`Server is running on port ${port}`);
 // });
-
-
-
