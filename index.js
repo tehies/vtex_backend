@@ -37,18 +37,18 @@ const fetchFromVtex = async (url, headers = {}) => {
 };
 
 
-const postToVtex = async (url, data, headers = {}) => {
-    try {
-        const response = await axios.post(url, data, { headers });
-        return response.data;
-    } catch (error) {
-        console.error(`Error posting data to VTEX API:`, {
-            message: error.message,
-            response: error.response?.data || "No response data",
-        });
-        throw error;
-    }
-};
+// const postToVtex = async (url, data, headers = {}) => {
+//     try {
+//         const response = await axios.post(url, data, { headers });
+//         return response.data;
+//     } catch (error) {
+//         console.error(`Error posting data to VTEX API:`, {
+//             message: error.message,
+//             response: error.response?.data || "No response data",
+//         });
+//         throw error;
+//     }
+// };
 
 
 app.get('/product/:productId/variants', async (req, res) => {
@@ -266,103 +266,103 @@ app.get('/searchProducts', async (req, res) => {
 
 // 
 
-app.post('/simulateOrder', async (req, res) => {
-    try {
-        const { items, postalCode, country } = req.body;
-        if (!items || !postalCode || !country) {
-            return res.status(400).send('Items, postalCode, and country are required');
-        }
+// app.post('/simulateOrder', async (req, res) => {
+//     try {
+//         const { items, postalCode, country } = req.body;
+//         if (!items || !postalCode || !country) {
+//             return res.status(400).send('Items, postalCode, and country are required');
+//         }
 
-        const headers = {
-            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-            'Content-Type': 'application/json',
-        };
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//             'Content-Type': 'application/json',
+//         };
 
-        const url = `${VTEX_API_URL}/api/checkout/pub/orderForms/simulation`;
-        const requestBody = {
-            items: items.map(item => ({
-                id: item.id,
-                quantity: item.quantity,
-                seller: item.seller || '1',
-            })),
-            postalCode,
-            country,
-        };
+//         const url = `${VTEX_API_URL}/api/checkout/pub/orderForms/simulation`;
+//         const requestBody = {
+//             items: items.map(item => ({
+//                 id: item.id,
+//                 quantity: item.quantity,
+//                 seller: item.seller || '1',
+//             })),
+//             postalCode,
+//             country,
+//         };
 
-        const simulationResult = await postToVtex(url, requestBody, headers);
-        console.log('Simulation Result:', simulationResult);
-        res.json(simulationResult);
-    } catch (error) {
-        console.error('Error simulating order:', error);
-        res.status(500).send('Error simulating order with VTEX API');
-    }
-});
-
-
-app.get('/cart/', async (req, res) => {
-    try {
-        const headers = {
-            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-        };
-
-        const url = `${VTEX_API_URL}/api/checkout/pub/orderForm`;
-        const orderForm = await fetchFromVtex(url, headers);
-
-        res.json(orderForm);
-    } catch (error) {
-        console.error('Error fetching OrderForm:', error);
-        res.status(500).send('Error fetching OrderForm from VTEX API');
-    }
-});
-// create card
+//         const simulationResult = await postToVtex(url, requestBody, headers);
+//         console.log('Simulation Result:', simulationResult);
+//         res.json(simulationResult);
+//     } catch (error) {
+//         console.error('Error simulating order:', error);
+//         res.status(500).send('Error simulating order with VTEX API');
+//     }
+// });
 
 
+// app.get('/cart/', async (req, res) => {
+//     try {
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
 
-app.get('/cart/:orderFormId', async (req, res) => {
-    try {
-        const { orderFormId } = req.params;
-        const headers = {
-            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-        };
-        const url = `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}`;
-        const orderForm = await fetchFromVtex(url, headers);
-        res.json(orderForm);
-    } catch (error) {
-        console.error('Error fetching OrderForm:', error.message);
-        res.status(500).send('Error fetching OrderForm from VTEX API');
-    }
-});
+//         const url = `${VTEX_API_URL}/api/checkout/pub/orderForm`;
+//         const orderForm = await fetchFromVtex(url, headers);
+
+//         res.json(orderForm);
+//     } catch (error) {
+//         console.error('Error fetching OrderForm:', error);
+//         res.status(500).send('Error fetching OrderForm from VTEX API');
+//     }
+// });
+// // create card
 
 
 
-app.post('/add-to-cart/:orderFormId', async (req, res) => {
-    const { orderFormId } = req.params;
-    const { orderItems } = req.body;
-    if (!orderItems) {
-        return res.status(400).json({ error: 'Item data is required' });
-    }
+// app.get('/cart/:orderFormId', async (req, res) => {
+//     try {
+//         const { orderFormId } = req.params;
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
+//         const url = `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}`;
+//         const orderForm = await fetchFromVtex(url, headers);
+//         res.json(orderForm);
+//     } catch (error) {
+//         console.error('Error fetching OrderForm:', error.message);
+//         res.status(500).send('Error fetching OrderForm from VTEX API');
+//     }
+// });
 
-    try {
-        const response = await axios.post(
-            `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}/items`,
-            { orderItems },
-            {
-                headers: {
-                    'X-VTEX-API-AppKey': process.env.VTEX_API_APP_KEY,
-                    'X-VTEX-API-AppToken': process.env.VTEX_API_APP_TOKEN,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
-        res.status(response.status).json(response.data);
-    } catch (error) {
-        console.error('Error adding item to cart:', error.message);
-        res.status(500).json({ error: 'Failed to add item to cart', details: error });
-    }
-});
+
+
+// app.post('/add-to-cart/:orderFormId', async (req, res) => {
+//     const { orderFormId } = req.params;
+//     const { orderItems } = req.body;
+//     if (!orderItems) {
+//         return res.status(400).json({ error: 'Item data is required' });
+//     }
+
+//     try {
+//         const response = await axios.post(
+//             `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}/items`,
+//             { orderItems },
+//             {
+//                 headers: {
+//                     'X-VTEX-API-AppKey': process.env.VTEX_API_APP_KEY,
+//                     'X-VTEX-API-AppToken': process.env.VTEX_API_APP_TOKEN,
+//                     'Content-Type': 'application/json',
+//                 },
+//             }
+//         );
+//         res.status(response.status).json(response.data);
+//     } catch (error) {
+//         console.error('Error adding item to cart:', error.message);
+//         res.status(500).json({ error: 'Failed to add item to cart', details: error });
+//     }
+// });
 // 
 // Root route for API status
 app.get('/', (req, res) => {     
@@ -392,59 +392,3 @@ app.listen(port, () => {
 
 
 
-
-
-
-
-// require('dotenv').config();
-// const express = require('express');
-// const axios = require('axios');
-// const cors = require('cors');
-// const app = express();
-// const port = process.env.PORT || 3000;
-
-// // API credentials and URL from .env file
-// const VTEX_API_URL = process.env.VTEX_API_URL;
-// const VTEX_API_APP_KEY = process.env.VTEX_API_APP_KEY;
-// const VTEX_API_APP_TOKEN = process.env.VTEX_API_APP_TOKEN;
-
-// // Middleware to handle JSON responses
-// app.use(express.json());
-// app.use(cors());
-
-// // Route to fetch products
-// app.get('/products', async (req, res) => {
-//     try {
-//         const response = await axios.get(VTEX_API_URL, {
-//             headers: {
-//                 'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-//                 'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN
-//             }
-//         });
-//         res.json(response.data);  // Send the product data as JSON response
-//     } catch (error) {
-//         console.error('Error fetching products from VTEX:', error);
-//         res.status(500).send('Error fetching products from VTEX API');
-//     }
-// });
-// // Route to fetch products for a specific collection ID (138)
-// app.get('/collection', async (req, res) => {
-//     try {
-//         const response = await axios.get(`https://iamtechiepartneruae.vtexcommercestable.com.br/api/catalog/pvt/collection/138/products`, {
-//             headers: {
-//                 'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-//                 'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN
-//             }
-//         });
-//         res.json(response.data);  // Send the product data for collection 138 as JSON response
-//     } catch (error) {
-//         console.error('Error fetching products from VTEX:', error);
-//         res.status(500).send('Error fetching products from VTEX API');
-//     }
-// });
-
-
-// // Start the server
-// app.listen(port, () => {
-//     console.log(`Server is running on port ${port}`);
-// });
