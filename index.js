@@ -3,7 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors')
 const app = express();
-const port = process.env.PORT || 4700;
+const port = process.env.PORT || 3000;
 
 
 if (!process.env.VTEX_API_URL || !process.env.VTEX_API_APP_KEY || !process.env.VTEX_API_APP_TOKEN) {
@@ -15,12 +15,7 @@ const VTEX_API_APP_KEY = process.env.VTEX_API_APP_KEY;
 const VTEX_API_APP_TOKEN = process.env.VTEX_API_APP_TOKEN;
 
 app.use(express.json());
-app.use(cors({
-    origin: 'http://localhost:3000',  // Allow requests from your frontend
-    methods: ['GET', 'POST'],        // Specify allowed HTTP methods
-    credentials: true,                // Allow cookies to be sent with requests
-}));
-
+app.use(cors());
 
 const fetchFromVtex = async (url, headers = {}) => {
     try {
