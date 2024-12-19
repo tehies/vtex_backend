@@ -1,28 +1,30 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors');
+const cors = require('cors')
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4700;
 
-// Validate required environment variables
+
 if (!process.env.VTEX_API_URL || !process.env.VTEX_API_APP_KEY || !process.env.VTEX_API_APP_TOKEN) {
     throw new Error("Missing required environment variables. Please check your .env file.");
 }
 
-// API credentials and URL from .env file
 const VTEX_API_URL = process.env.VTEX_API_URL;
 const VTEX_API_APP_KEY = process.env.VTEX_API_APP_KEY;
 const VTEX_API_APP_TOKEN = process.env.VTEX_API_APP_TOKEN;
 
-// Middleware to handle JSON responses and CORS
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',  // Allow requests from your frontend
+    methods: ['GET', 'POST'],        // Specify allowed HTTP methods
+    credentials: true,                // Allow cookies to be sent with requests
+}));
 
-// Helper function for VTEX API requests
+
 const fetchFromVtex = async (url, headers = {}) => {
     try {
-        const response = await axios.get(url, { headers });
+        const response = await axios.get(url, { headers: headers });
         return response.data;
     } catch (error) {
         console.error(`Error fetching data from VTEX API:`, {
@@ -33,40 +35,22 @@ const fetchFromVtex = async (url, headers = {}) => {
     }
 };
 
-app.get('/product/:productId/variants', async (req, res) => {
+
+// Helper function for VTEX API POST requests
+const postToVtex = async (url, data, headers = {}) => {
     try {
-        const productId = req.params.productId; // Get product ID from the URL
-        if (!productId) {
-            return res.status(400).send('Product ID is required');
-        }
-
-        const headers = {
-            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-        };
-
-        const url = `${VTEX_API_URL}/api/catalog_system/pub/products/variations/${productId}`;
-        const productVariants = await fetchFromVtex(url, headers);
-        res.json(productVariants);
+        const response = await axios.post(url, data, { headers });
+        return response.data;
     } catch (error) {
-        console.error('Error fetching product variants:', error);
-        res.status(500).send('Error fetching product variants from VTEX API');
+        console.error(`Error posting data to VTEX API:`, {
+            message: error.message,
+            response: error.response?.data || "No response data",
+        });
+        throw error;
     }
-});
-// Route to fetch all products
-// app.get('/products', async (req, res) => {
-//     try {
-//         const headers = {
-//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-//         };
-//         // Ensure you are fetching the correct products endpoint
-//         const products = await fetchFromVtex(`${VTEX_API_URL}/api/catalog_system/pub/products/search`, headers); // Append /products if necessary
-//         res.json(products);
-//     } catch (error) {
-//         res.status(500).send('Error fetching products from VTEX API');
-//     }
-// });
+};
+
+
 
 app.get('/sku/:skuId', async (req, res) => {
     try {
@@ -90,10 +74,7 @@ app.get('/sku/:skuId', async (req, res) => {
 });
 
 
-
-
-
-app.get('/recommendations/:skuId', async (req, res) => {
+app.get('/pricing/:skuId', async (req, res) => {
     try {
         const skuId = req.params.skuId;
         if (!skuId) {
@@ -105,41 +86,6 @@ app.get('/recommendations/:skuId', async (req, res) => {
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
 
-        // Step 1: Fetch product details using the SKU ID
-        const skuUrl = `${VTEX_API_URL}/api/catalog_system/pvt/sku/stockkeepingunitbyid/${skuId}`;
-        const skuDetails = await fetchFromVtex(skuUrl, headers);
-
-        const productId = skuDetails.ProductId; // Extract the Product ID
-        console.log(productId);
-
-        if (!productId) {
-            return res.status(404).send('Product ID not found for the given SKU ID');
-        }
-
-        // Step 2: Fetch recommendation products using the Product ID
-        const recommendationsUrl = `${VTEX_API_URL}/api/catalog_system/pub/products/crossselling/similars/${productId}`;
-        const recommendations = await fetchFromVtex(recommendationsUrl, headers);
-
-        res.json(recommendations);
-    } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        res.status(500).send('Error fetching recommendation products from VTEX API');
-    }
-});
-
-app.get('/pricing/:skuId', async (req, res) => {
-    try {
-        const skuId = req.params.skuId; // Get SKU ID from the URL
-        if (!skuId) {
-            return res.status(400).send('SKU ID is required');
-        }
-
-        const headers = {
-            'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-            'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-        };
-
-        // VTEX Pricing API URL
         const url = `${VTEX_API_URL}/iamtechiepartneruae/pricing/prices/${skuId}`;
         const pricingDetails = await fetchFromVtex(url, headers);
         res.json(pricingDetails);
@@ -149,10 +95,10 @@ app.get('/pricing/:skuId', async (req, res) => {
     }
 });
 
-// Route to fetch products in a specific collection
+
 app.get('/collectionProduct', async (req, res) => {
     try {
-        const collectionId = req.query.collectionId; // Get collectionId from query parameters
+        const collectionId = req.query.collectionId;
         if (!collectionId) {
             return res.status(400).send('Collection ID is required');
         }
@@ -171,41 +117,10 @@ app.get('/collectionProduct', async (req, res) => {
     }
 });
 
-// Route to fetch products based on search query
-// app.get('/searchProducts', async (req, res) => {
-//     try {
-//         const searchQuery = req.query.q; // Get search query from query parameters
-//         if (!searchQuery) {
-//             return res.status(400).send('Search query is required');
-//         }
 
-//         const headers = {
-//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
-//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
-//         };
-
-//         const url = `https://iamtechiepartneruae.vtexcommercestable.com.br/api/catalog_system/pub/products/search/${encodeURIComponent(searchQuery)}`;
-//         const response = await fetch(url, { headers });
-//         if (!response.ok) {
-//             throw new Error(`VTEX API error: ${response.statusText}`);
-//         }
-
-//         const products = await response.json();
-//         res.json(products);
-//     } catch (error) {
-//         console.error('Error fetching search results:', error);
-//         res.status(500).send('Error fetching search results from VTEX API');
-//     }
-// });
-
-
-
-
-
-//use search product api and Get product's SKUs by product ID 
 app.get('/searchProducts', async (req, res) => {
     try {
-        const searchQuery = req.query.q; // Get search query from query parameters
+        const searchQuery = req.query.q;
         if (!searchQuery) {
             return res.status(400).send('Search query is required');
         }
@@ -223,7 +138,6 @@ app.get('/searchProducts', async (req, res) => {
 
         const products = await response.json();
 
-        // Fetch variations (SKUs) for each product
         const productsWithSkus = await Promise.all(
             products.map(async (product) => {
                 const variationsUrl = `${VTEX_API_URL}/api/catalog_system/pub/products/variations/${product.productId}`;
@@ -244,7 +158,6 @@ app.get('/searchProducts', async (req, res) => {
         res.status(500).send('Error fetching search results from VTEX API');
     }
 });
-
 
 
 app.post('/simulateOrder', async (req, res) => {
@@ -350,32 +263,10 @@ app.post('/add-to-cart/:orderFormId', async (req, res) => {
 
 
 
-
-// Root route for API status
-app.get('/', (req, res) => {
-    res.send('VTEX API Server is running!');
-});
-
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
