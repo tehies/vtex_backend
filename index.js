@@ -103,14 +103,52 @@ app.get('/collectionProduct', async (req, res) => {
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
 
+        // Fetch products from the collection
         const url = `${VTEX_API_URL}/api/catalog/pvt/collection/${collectionId}/products`;
-        const products = await fetchFromVtex(url, headers);
-        res.json(products);
+        const response = await fetchFromVtex(url, headers);
+        const products = response.Data; // Extract products from the response
+
+        // Fetch additional SKU details for each product
+        const productsWithSkuDetails = await Promise.all(products.map(async (product) => {
+            const skuId = product.SkuId; // SKU ID is already in the product data
+            const skuUrl = `${VTEX_API_URL}/api/catalog_system/pvt/sku/stockkeepingunitbyid/${skuId}`;
+            const skuDetails = await fetchFromVtex(skuUrl, headers);
+
+            // Combine product data with SKU details
+            return {
+                ...product, // Original product details
+                skuDetails,  // Additional SKU details
+            };
+        }));
+
+        res.json(productsWithSkuDetails);
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching products and SKU details:', error);
         res.status(500).send('Error fetching products from VTEX API');
     }
 });
+
+
+// app.get('/collectionProduct', async (req, res) => {
+//     try {
+//         const collectionId = req.query.collectionId;
+//         if (!collectionId) {
+//             return res.status(400).send('Collection ID is required');
+//         }
+
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
+
+//         const url = `${VTEX_API_URL}/api/catalog/pvt/collection/${collectionId}/products`;
+//         const products = await fetchFromVtex(url, headers);
+//         res.json(products);
+//     } catch (error) {
+//         console.error('Error fetching products:', error);
+//         res.status(500).send('Error fetching products from VTEX API');
+//     }
+// });
 
 
 app.get('/searchProducts', async (req, res) => {
@@ -208,22 +246,64 @@ app.get('/cart/', async (req, res) => {
 // create card
 
 
+//
 
-app.get('/cart/:orderFormId', async (req, res) => {
+
+app.get('/cart-with-product-details/:orderFormId', async (req, res) => {
     try {
         const { orderFormId } = req.params;
+        if (!orderFormId) {
+            return res.status(400).send('Order Form ID is required');
+        }
+
         const headers = {
             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
         };
-        const url = `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}`;
-        const orderForm = await fetchFromVtex(url, headers);
-        res.json(orderForm);
+        const orderFormUrl = `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}`;
+        const orderForm = await fetchFromVtex(orderFormUrl, headers);
+        if (!orderForm.items || orderForm.items.length === 0) {
+            return res.json({ ...orderForm, productDetails: [] });
+        }
+
+        const productDetailsPromises = orderForm.items.map(async (item) => {
+            const skuId = item.id;
+            const skuDetailsUrl = `${VTEX_API_URL}/api/catalog_system/pvt/sku/stockkeepingunitbyid/${skuId}`;
+            try {
+                const skuDetails = await fetchFromVtex(skuDetailsUrl, headers);
+                return { ...item, skuDetails };
+            } catch (error) {
+                console.error(`Error fetching SKU details for SKU ID: ${skuId}`, error.message);
+                return { ...item, skuDetails: null, error: 'Failed to fetch SKU details' };
+            }
+        });
+        const productDetails = await Promise.all(productDetailsPromises);
+
+        res.json({ ...orderForm, productDetails });
     } catch (error) {
-        console.error('Error fetching OrderForm:', error.message);
-        res.status(500).send('Error fetching OrderForm from VTEX API');
+        console.error('Error combining OrderForm and SKU details:', error.message);
+        res.status(500).send('Error combining OrderForm and SKU details');
     }
 });
+
+
+
+//
+// app.get('/cart/:orderFormId', async (req, res) => {
+//     try {
+//         const { orderFormId } = req.params;
+//         const headers = {
+//             'X-VTEX-API-AppKey': VTEX_API_APP_KEY,
+//             'X-VTEX-API-AppToken': VTEX_API_APP_TOKEN,
+//         };
+//         const url = `${VTEX_API_URL}/api/checkout/pub/orderForm/${orderFormId}`;
+//         const orderForm = await fetchFromVtex(url, headers);
+//         res.json(orderForm);
+//     } catch (error) {
+//         console.error('Error fetching OrderForm:', error.message);
+//         res.status(500).send('Error fetching OrderForm from VTEX API');
+//     }
+// });
 
 
 app.post('/add-to-cart/:orderFormId', async (req, res) => {
